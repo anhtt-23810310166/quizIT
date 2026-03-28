@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("USER") // Chuyển enum sang String cho SQLite
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  results   Result[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  exams       Exam[]
+}
+
+model Exam {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  duration    Int        // duration in minutes
+  status      String     @default("DRAFT") // DRAFT, PUBLISHED
+  categoryId  String
+  category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+  results     Result[]
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  examId        String
+  exam          Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  content       String
+  type          String       @default("SINGLE_CHOICE") // Chuyển enum sang String
+  options       String       // Dùng String lưu trữ options phân mảnh bằng ký tự đặc biệt hoặc JSON.stringify
+  correctOption Int          // index of correct option (0-3)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Result {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examId       String
+  exam         Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  score        Float
+  totalCorrect Int
+  totalAnswers Int
+  answers      String   // Lưu JSON lịch sử lựa chọn dưới dạng String
+  submittedAt  DateTime @default(now())
+}
